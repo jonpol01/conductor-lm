@@ -1,0 +1,21 @@
+{
+  "version": "v0",
+  "classes": {
+    "light_extractive_local": "Light extractive/transformative task within local capability and context limits.",
+    "high_volume_batch_local": "Batch/map workload where per-item cost dominates; local tier at zero marginal cost.",
+    "privacy_local_required": "Task flagged privacy-sensitive; must not leave the local tier.",
+    "budget_conservation_downroute": "Frontier/mid budget pressure; task downrouted to a cheaper capable executor.",
+    "boilerplate_draft_mid": "Routine drafting (docs, descriptions, templates) suited to the mid tier.",
+    "low_risk_code_mid": "Low-risk, well-scoped code with clear acceptance criteria; mid tier suffices.",
+    "mechanical_refactor_mid": "Mechanical, pattern-driven code transformation; mid tier with review step.",
+    "history_failure_escalation": "A cheaper tier previously failed or escalated on this task class; routing one tier up.",
+    "long_context_capability_gate": "Context length exceeds the preferred tier's window; gated to a longer-context executor.",
+    "capability_gate_local_unfit": "Task class not within the local executor's declared capabilities.",
+    "fleet_gap_fail_up": "Preferred tier absent from the fleet registry; failing up to the next available tier.",
+    "ambiguity_fail_up": "Task is underspecified/ambiguous; resolving uncertainty toward the more capable tier.",
+    "correctness_critical_frontier": "Correctness-critical work (user-facing, hard logic); frontier required.",
+    "security_sensitive_frontier": "Security-relevant code or review; frontier required regardless of size.",
+    "architecture_design_frontier": "Architecture/design decisions with long-lived consequences; frontier required.",
+    "complex_reasoning_frontier": "Multi-step reasoning, hard debugging, or mathematics; frontier required."
+  }
+}

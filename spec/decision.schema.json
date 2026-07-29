@@ -1,0 +1,67 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://github.com/jonpol01/conductor-lm/spec/decision.schema.json",
+  "title": "Conductor routing decision v0",
+  "type": "object",
+  "required": ["route", "plan", "escalation", "confidence", "rationale_class"],
+  "additionalProperties": false,
+  "properties": {
+    "route": { "type": "string", "minLength": 1 },
+    "plan": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 4,
+      "items": {
+        "type": "object",
+        "required": ["step", "route"],
+        "additionalProperties": false,
+        "properties": {
+          "step": { "type": "string", "minLength": 1 },
+          "route": { "type": "string", "minLength": 1 }
+        }
+      }
+    },
+    "escalation": {
+      "type": "object",
+      "required": ["on", "to"],
+      "additionalProperties": false,
+      "properties": {
+        "on": {
+          "type": "array",
+          "items": {
+            "enum": [
+              "schema_invalid",
+              "self_reported_uncertainty",
+              "output_rejected",
+              "test_fail",
+              "tool_error",
+              "context_overflow"
+            ]
+          }
+        },
+        "to": { "type": ["string", "null"] }
+      }
+    },
+    "confidence": { "type": "number", "minimum": 0, "maximum": 1 },
+    "rationale_class": {
+      "enum": [
+        "light_extractive_local",
+        "high_volume_batch_local",
+        "privacy_local_required",
+        "budget_conservation_downroute",
+        "boilerplate_draft_mid",
+        "low_risk_code_mid",
+        "mechanical_refactor_mid",
+        "history_failure_escalation",
+        "long_context_capability_gate",
+        "capability_gate_local_unfit",
+        "fleet_gap_fail_up",
+        "ambiguity_fail_up",
+        "correctness_critical_frontier",
+        "security_sensitive_frontier",
+        "architecture_design_frontier",
+        "complex_reasoning_frontier"
+      ]
+    }
+  }
+}
