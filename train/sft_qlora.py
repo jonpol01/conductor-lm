@@ -117,6 +117,7 @@ def main():
         gradient_checkpointing_kwargs={"use_reentrant": False},
         max_length=args.max_len,
         optim="adamw_8bit",
+        use_liger_kernel=True,  # fused CE: avoids materializing seq×262k-vocab logits
         report_to="none",
     )
     try:
