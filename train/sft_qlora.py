@@ -32,17 +32,33 @@ def main():
         bnb_4bit_compute_dtype=torch.bfloat16,
     )
     tok = AutoTokenizer.from_pretrained(args.model)
-    # Load the text-only class when available: the multimodal towers (vision/audio)
-    # are dead weight for routing and their VRAM causes WDDM sysmem spill on 10GB.
     load_kwargs = dict(quantization_config=bnb, device_map={"": 0},
                        attn_implementation=args.attn, dtype=torch.bfloat16)
+
+    def load_model():
+        return AutoModelForCausalLM.from_pretrained(args.model, **load_kwargs)
+
+    # The multimodal towers are dead weight for text-only routing; their VRAM
+    # pushes a 10GB card into WDDM sysmem spill. Drop them post-load and verify
+    # a text forward still works; reload untouched on any failure.
+    import gc
+    model = load_model()
     try:
-        from transformers import Gemma4ForCausalLM
-        model = Gemma4ForCausalLM.from_pretrained(args.model, **load_kwargs)
-        print("loaded text-only Gemma4ForCausalLM")
+        base = model.model
+        removed = [n for n in ("vision_tower", "audio_tower", "embed_vision", "embed_audio")
+                   if base._modules.pop(n, None) is not None]
+        gc.collect()
+        torch.cuda.empty_cache()
+        with torch.no_grad():
+            model(**tok("ping", return_tensors="pt").to(model.device))
+        print(f"removed towers {removed}; text-only forward OK; "
+              f"vram={torch.cuda.memory_allocated()//2**20}MiB")
     except Exception as e:
-        print(f"text-only load failed ({e}); loading full model")
-        model = AutoModelForCausalLM.from_pretrained(args.model, **load_kwargs)
+        print(f"tower removal failed ({e}); reloading full model")
+        del model
+        gc.collect()
+        torch.cuda.empty_cache()
+        model = load_model()
     model.config.use_cache = False
     model = prepare_model_for_kbit_training(model)
 
