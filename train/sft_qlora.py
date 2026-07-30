@@ -17,7 +17,8 @@ def main():
     ap.add_argument("--model", default="google/gemma-4-E2B-it")
     ap.add_argument("--data", default="data")
     ap.add_argument("--out", default="runs/e2b-v0")
-    ap.add_argument("--epochs", type=float, default=2.0)
+    ap.add_argument("--epochs", type=float, default=1.0)
+    ap.add_argument("--attn", default="sdpa")
     ap.add_argument("--max-len", type=int, default=1536)
     ap.add_argument("--bs", type=int, default=1)
     ap.add_argument("--grad-accum", type=int, default=16)
@@ -35,7 +36,7 @@ def main():
         args.model,
         quantization_config=bnb,
         device_map={"": 0},
-        attn_implementation="eager",
+        attn_implementation=args.attn,
         torch_dtype=torch.bfloat16,
     )
     model.config.use_cache = False
