@@ -41,14 +41,34 @@ def main():
     model.config.use_cache = False
     model = prepare_model_for_kbit_training(model)
 
+    # gemma4 wraps some projections in Gemma4ClippableLinear (real Linear4bit at
+    # <proj>.linear) and has plain Linear4bit in other layers — select targets by
+    # module type so LoRA lands only on actual linears, text stack only.
+    from bitsandbytes.nn import Linear4bit
+    WANT = {"q_proj", "k_proj", "v_proj", "o_proj", "gate_proj", "up_proj", "down_proj"}
+
+    def is_target(name, mod):
+        if not isinstance(mod, Linear4bit):
+            return False
+        if "vision_tower" in name or "audio_tower" in name:
+            return False
+        parts = name.split(".")
+        if parts[-1] in WANT:
+            return True
+        return parts[-1] == "linear" and len(parts) >= 2 and parts[-2] in WANT
+
+    targets = sorted(n for n, m in model.named_modules() if is_target(n, m))
+    if not targets:
+        raise RuntimeError("no LoRA target modules found")
+    print(f"LoRA targets: {len(targets)} modules")
+
     lora = LoraConfig(
         r=16,
         lora_alpha=32,
         lora_dropout=0.05,
         bias="none",
         task_type="CAUSAL_LM",
-        target_modules=["q_proj", "k_proj", "v_proj", "o_proj",
-                        "gate_proj", "up_proj", "down_proj"],
+        target_modules=targets,
     )
     model = get_peft_model(model, lora)
     model.print_trainable_parameters()
