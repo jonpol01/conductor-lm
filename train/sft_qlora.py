@@ -32,13 +32,17 @@ def main():
         bnb_4bit_compute_dtype=torch.bfloat16,
     )
     tok = AutoTokenizer.from_pretrained(args.model)
-    model = AutoModelForCausalLM.from_pretrained(
-        args.model,
-        quantization_config=bnb,
-        device_map={"": 0},
-        attn_implementation=args.attn,
-        torch_dtype=torch.bfloat16,
-    )
+    # Load the text-only class when available: the multimodal towers (vision/audio)
+    # are dead weight for routing and their VRAM causes WDDM sysmem spill on 10GB.
+    load_kwargs = dict(quantization_config=bnb, device_map={"": 0},
+                       attn_implementation=args.attn, dtype=torch.bfloat16)
+    try:
+        from transformers import Gemma4ForCausalLM
+        model = Gemma4ForCausalLM.from_pretrained(args.model, **load_kwargs)
+        print("loaded text-only Gemma4ForCausalLM")
+    except Exception as e:
+        print(f"text-only load failed ({e}); loading full model")
+        model = AutoModelForCausalLM.from_pretrained(args.model, **load_kwargs)
     model.config.use_cache = False
     model = prepare_model_for_kbit_training(model)
 
@@ -90,13 +94,13 @@ def main():
         logging_steps=20,
         eval_strategy="steps",
         eval_steps=200,
-        save_steps=200,
+        save_steps=100,
         save_total_limit=2,
         bf16=True,
         gradient_checkpointing=True,
         gradient_checkpointing_kwargs={"use_reentrant": False},
         max_length=args.max_len,
-        optim="paged_adamw_8bit",
+        optim="adamw_8bit",
         report_to="none",
     )
     try:

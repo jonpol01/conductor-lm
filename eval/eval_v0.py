@@ -56,9 +56,14 @@ def main():
                              bnb_4bit_use_double_quant=True,
                              bnb_4bit_compute_dtype=torch.bfloat16)
     tok = AutoTokenizer.from_pretrained(args.model)
-    model = AutoModelForCausalLM.from_pretrained(
-        args.model, quantization_config=bnb, device_map={"": 0},
-        attn_implementation="eager", torch_dtype=torch.bfloat16)
+    # Must mirror train/sft_qlora.py: adapter module paths depend on the load class.
+    load_kwargs = dict(quantization_config=bnb, device_map={"": 0},
+                       attn_implementation="sdpa", dtype=torch.bfloat16)
+    try:
+        from transformers import Gemma4ForCausalLM
+        model = Gemma4ForCausalLM.from_pretrained(args.model, **load_kwargs)
+    except Exception:
+        model = AutoModelForCausalLM.from_pretrained(args.model, **load_kwargs)
     if args.adapter:
         model = PeftModel.from_pretrained(model, args.adapter)
     model.eval()
