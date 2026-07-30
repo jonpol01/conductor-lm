@@ -4,6 +4,7 @@ python train/sft_qlora.py --data data --out runs/e2b-v0
 """
 
 import argparse
+import os
 
 import torch
 from datasets import load_dataset
@@ -130,7 +131,11 @@ def main():
         trainer = SFTTrainer(model=model, args=cfg, processing_class=tok,
                              train_dataset=ds["train"], eval_dataset=ds["eval"])
 
-    trainer.train()
+    from transformers.trainer_utils import get_last_checkpoint
+    last = get_last_checkpoint(args.out) if os.path.isdir(args.out) else None
+    if last:
+        print(f"resuming from {last}")
+    trainer.train(resume_from_checkpoint=last)
     trainer.save_model(args.out + "/final")
     tok.save_pretrained(args.out + "/final")
     print("saved:", args.out + "/final")
