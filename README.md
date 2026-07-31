@@ -38,6 +38,7 @@ Conductor is a **control-plane** component. It never executes tasks and never ge
 The envelope carries the task text, a context summary, the fleet registry, budget state, and
 failure history. Conductor emits tier selection, decomposition, escalation policy, and
 confidence as constrained JSON. Execution outcomes return as training signal (§5, Stage 2).
+Japanese edition of this figure: [docs/architecture.ja.svg](docs/architecture.ja.svg).
 
 ### 3.1 Input: task envelope
 
