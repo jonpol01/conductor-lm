@@ -1,0 +1,66 @@
+<svg width="680" height="354" viewBox="0 0 680 354" role="img" xmlns="http://www.w3.org/2000/svg">
+<title>Conductor orchestration architecture</title>
+<desc>A task envelope feeds into Conductor, a small Gemma 4 E2B model acting as control plane, which emits a JSON routing decision to one of three executor tiers: frontier, mid, or local. Dashed arrows show the escalation path upward between tiers, and a dotted arrow returns outcome feedback to Conductor for retraining.</desc>
+<style>
+  text { font-family: -apple-system, "Segoe UI", Helvetica, Arial, sans-serif; }
+  .t  { font-size: 14px; font-weight: 400; fill: #1f2328; }
+  .ts { font-size: 12px; font-weight: 400; fill: #59636e; }
+  .th { font-size: 14px; font-weight: 500; fill: #1f2328; }
+  .box  { fill: #f6f8fa; stroke: #d1d9e0; stroke-width: 0.5; }
+  .amber { fill: #fff8c5; stroke: #d4a72c; stroke-width: 0.5; }
+  .blue  { fill: #ddf4ff; stroke: #54aeff; stroke-width: 0.5; }
+  .arr  { stroke: #59636e; stroke-width: 1.5; fill: none; }
+  .esc  { stroke: #59636e; stroke-width: 1; fill: none; stroke-dasharray: 4 3; }
+  .fb   { stroke: #818b98; stroke-width: 1; fill: none; stroke-dasharray: 1 4; }
+  @media (prefers-color-scheme: dark) {
+    .t, .th { fill: #f0f6fc; }
+    .ts { fill: #9198a1; }
+    .box { fill: #151b23; stroke: #3d444d; }
+    .amber { fill: #3a2d12; stroke: #d4a72c; }
+    .blue { fill: #121d2f; stroke: #316dca; }
+    .arr, .esc { stroke: #9198a1; }
+    .fb { stroke: #656c76; }
+  }
+</style>
+<defs><marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M2 1L8 5L2 9" fill="none" stroke="context-stroke" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></marker></defs>
+
+<rect class="box" x="40" y="96" width="150" height="104" rx="4"/>
+<text class="th" x="115" y="124" text-anchor="middle">Task envelope</text>
+<text class="ts" x="115" y="148" text-anchor="middle">task + context</text>
+<text class="ts" x="115" y="168" text-anchor="middle">fleet + budget</text>
+<text class="ts" x="115" y="188" text-anchor="middle">failure history</text>
+
+<rect class="amber" x="250" y="96" width="170" height="104" rx="4"/>
+<text class="th" x="335" y="126" text-anchor="middle">Conductor</text>
+<text class="ts" x="335" y="150" text-anchor="middle">Gemma 4 E2B</text>
+<text class="ts" x="335" y="170" text-anchor="middle">control plane</text>
+
+<rect class="blue" x="470" y="44" width="170" height="56" rx="4"/>
+<text class="th" x="555" y="70" text-anchor="middle">Frontier tier</text>
+<text class="ts" x="555" y="88" text-anchor="middle">hard reasoning</text>
+
+<rect class="blue" x="470" y="124" width="170" height="56" rx="4"/>
+<text class="th" x="555" y="150" text-anchor="middle">Mid tier</text>
+<text class="ts" x="555" y="168" text-anchor="middle">low-risk code</text>
+
+<rect class="blue" x="470" y="204" width="170" height="56" rx="4"/>
+<text class="th" x="555" y="230" text-anchor="middle">Local tier</text>
+<text class="ts" x="555" y="248" text-anchor="middle">extract, classify</text>
+
+<line class="arr" x1="190" y1="148" x2="244" y2="148" marker-end="url(#arrow)"/>
+<line class="arr" x1="420" y1="140" x2="464" y2="74" marker-end="url(#arrow)"/>
+<line class="arr" x1="420" y1="148" x2="464" y2="152" marker-end="url(#arrow)"/>
+<line class="arr" x1="420" y1="156" x2="464" y2="230" marker-end="url(#arrow)"/>
+
+<line class="esc" x1="555" y1="204" x2="555" y2="184" marker-end="url(#arrow)"/>
+<line class="esc" x1="555" y1="124" x2="555" y2="104" marker-end="url(#arrow)"/>
+
+<path class="fb" d="M555 260 L555 300 L335 300 L335 204" marker-end="url(#arrow)"/>
+
+<line class="arr" x1="40" y1="326" x2="70" y2="326"/>
+<text class="ts" x="78" y="330">routing decision</text>
+<line class="esc" x1="200" y1="326" x2="230" y2="326"/>
+<text class="ts" x="238" y="330">escalation path</text>
+<line class="fb" x1="390" y1="326" x2="420" y2="326"/>
+<text class="ts" x="428" y="330">outcome feedback</text>
+</svg>

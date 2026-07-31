@@ -33,19 +33,11 @@ The economic argument is direct: if a meaningful fraction of an agentic workload
 
 Conductor is a **control-plane** component. It never executes tasks and never generates user-facing content; it reads a task envelope and writes a routing decision. Execution happens in the **data plane** (Claude, mid-tier hosted models, local models, tools).
 
-```
-                       ┌────────────────────────────┐
- task envelope ──────► │  Conductor (SLM, local)    │ ──► routing decision (JSON)
-  · task text          │  · tier selection          │       │
-  · context summary    │  · decomposition           │       ▼
-  · fleet registry     │  · escalation policy       │  ┌─────────────────────────┐
-  · budget state       │  · confidence              │  │ Executor fleet          │
-  · failure history    └────────────────────────────┘  │ · frontier (Claude)     │
-                                    ▲                  │ · mid-tier (hosted)     │
-                                    │ outcome feedback │ · local (LM Studio/MLX) │
-                                    └──────────────────┤ · tools / MCP servers   │
-                                                       └─────────────────────────┘
-```
+<p align="center"><img src="docs/architecture.svg" alt="Conductor reads a task envelope and emits a JSON routing decision selecting a frontier, mid, or local executor; escalation paths run upward between tiers and execution outcomes feed back for retraining." width="680"></p>
+
+The envelope carries the task text, a context summary, the fleet registry, budget state, and
+failure history. Conductor emits tier selection, decomposition, escalation policy, and
+confidence as constrained JSON. Execution outcomes return as training signal (§5, Stage 2).
 
 ### 3.1 Input: task envelope
 
