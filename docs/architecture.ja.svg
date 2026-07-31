@@ -49,10 +49,6 @@
 <rect class="box" x="140" y="258" width="360" height="36" rx="4"/>
 <text class="ts" x="320" y="281" text-anchor="middle">ルート・実行計画・エスカレーション・確信度</text>
 
-<line class="arr" x1="320" y1="308" x2="146" y2="364" marker-end="url(#arrow)"/>
-<line class="arr" x1="320" y1="308" x2="320" y2="364" marker-end="url(#arrow)"/>
-<line class="arr" x1="320" y1="308" x2="494" y2="364" marker-end="url(#arrow)"/>
-
 <rect class="region" x="40" y="336" width="560" height="134" rx="4"/>
 <text class="th" x="56" y="360">データプレーン</text>
 <rect class="blue" x="56" y="372" width="160" height="80" rx="4"/>
@@ -67,6 +63,10 @@
 <text class="th" x="504" y="396" text-anchor="middle">ローカル層</text>
 <text class="ts" x="504" y="416" text-anchor="middle">端末内・無料</text>
 <text class="ts" x="504" y="436" text-anchor="middle">抽出・分類</text>
+
+<line class="arr" x1="320" y1="308" x2="146" y2="370" marker-end="url(#arrow)"/>
+<line class="arr" x1="320" y1="308" x2="320" y2="370" marker-end="url(#arrow)"/>
+<line class="arr" x1="320" y1="308" x2="494" y2="370" marker-end="url(#arrow)"/>
 
 <line class="esc" x1="422" y1="412" x2="404" y2="412" marker-end="url(#arrow)"/>
 <line class="esc" x1="238" y1="412" x2="220" y2="412" marker-end="url(#arrow)"/>

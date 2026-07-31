@@ -33,12 +33,31 @@ The economic argument is direct: if a meaningful fraction of an agentic workload
 
 Conductor is a **control-plane** component. It never executes tasks and never generates user-facing content; it reads a task envelope and writes a routing decision. Execution happens in the **data plane** (Claude, mid-tier hosted models, local models, tools).
 
-<p align="center"><img src="docs/architecture.svg" alt="Conductor reads a task envelope and emits a JSON routing decision selecting a frontier, mid, or local executor; escalation paths run upward between tiers and execution outcomes feed back for retraining." width="680"></p>
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/architecture-dark.png">
+    <img src="docs/architecture.png" alt="Conductor reads a task envelope and emits a JSON routing decision selecting a frontier, mid, or local executor. Escalation arrows between tiers point toward more capability, and execution outcomes feed back to Conductor for retraining." width="680">
+  </picture>
+</p>
+
+<p align="center"><em>Figure 1 — Conductor sits entirely in the control plane: it decides, and never executes.</em></p>
 
 The envelope carries the task text, a context summary, the fleet registry, budget state, and
 failure history. Conductor emits tier selection, decomposition, escalation policy, and
 confidence as constrained JSON. Execution outcomes return as training signal (§5, Stage 2).
-Japanese edition of this figure: [docs/architecture.ja.svg](docs/architecture.ja.svg).
+
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/architecture.ja-dark.png">
+    <img src="docs/architecture.ja.png" alt="Japanese edition of Figure 1: the same Conductor pipeline with control plane and data plane regions labelled in Japanese." width="680">
+  </picture>
+</p>
+
+<p align="center"><em>図 1 — Conductor は制御プレーンに属し、ルーティングを決定するのみで実行はしない。</em></p>
+
+Vector sources for both figures: [architecture.svg](docs/architecture.svg) ·
+[architecture.ja.svg](docs/architecture.ja.svg). Each PNG ships in light and dark variants and
+is selected automatically by the reader's theme.
 
 ### 3.1 Input: task envelope
 
