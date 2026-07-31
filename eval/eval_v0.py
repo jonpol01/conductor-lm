@@ -6,13 +6,15 @@ python eval/eval_v0.py --adapter runs/e2b-v0/final --data data/eval_raw.jsonl --
 import argparse
 import json
 import os
+import sys
 
 import torch
 from jsonschema import Draft7Validator
 from peft import PeftModel
-from transformers import AutoModelForCausalLM, AutoTokenizer, BitsAndBytesConfig
 
 HERE = os.path.dirname(os.path.abspath(__file__))
+sys.path.insert(0, os.path.join(HERE, ".."))
+from common import load_base  # noqa: E402
 
 
 def extract_json(text):
@@ -52,13 +54,7 @@ def main():
     with open(os.path.join(HERE, "..", "spec", "system_prompt.txt"), encoding="utf-8") as f:
         sys_prompt = f.read().strip()
 
-    bnb = BitsAndBytesConfig(load_in_4bit=True, bnb_4bit_quant_type="nf4",
-                             bnb_4bit_use_double_quant=True,
-                             bnb_4bit_compute_dtype=torch.bfloat16)
-    tok = AutoTokenizer.from_pretrained(args.model)
-    model = AutoModelForCausalLM.from_pretrained(
-        args.model, quantization_config=bnb, device_map={"": 0},
-        attn_implementation="sdpa", dtype=torch.bfloat16)
+    model, tok = load_base(args.model)
     if args.adapter:
         model = PeftModel.from_pretrained(model, args.adapter)
     model.eval()

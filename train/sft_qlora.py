@@ -5,12 +5,14 @@ python train/sft_qlora.py --data data --out runs/e2b-v0
 
 import argparse
 import os
+import sys
 
-import torch
 from datasets import load_dataset
 from peft import LoraConfig, prepare_model_for_kbit_training, get_peft_model
-from transformers import AutoModelForCausalLM, AutoTokenizer, BitsAndBytesConfig
 from trl import SFTConfig, SFTTrainer
+
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
+from common import load_base  # noqa: E402
 
 
 def main():
@@ -26,40 +28,7 @@ def main():
     ap.add_argument("--lr", type=float, default=2e-4)
     args = ap.parse_args()
 
-    bnb = BitsAndBytesConfig(
-        load_in_4bit=True,
-        bnb_4bit_quant_type="nf4",
-        bnb_4bit_use_double_quant=True,
-        bnb_4bit_compute_dtype=torch.bfloat16,
-    )
-    tok = AutoTokenizer.from_pretrained(args.model)
-    load_kwargs = dict(quantization_config=bnb, device_map={"": 0},
-                       attn_implementation=args.attn, dtype=torch.bfloat16)
-
-    def load_model():
-        return AutoModelForCausalLM.from_pretrained(args.model, **load_kwargs)
-
-    # The multimodal towers are dead weight for text-only routing; their VRAM
-    # pushes a 10GB card into WDDM sysmem spill. Drop them post-load and verify
-    # a text forward still works; reload untouched on any failure.
-    import gc
-    model = load_model()
-    try:
-        base = model.model
-        removed = [n for n in ("vision_tower", "audio_tower", "embed_vision", "embed_audio")
-                   if base._modules.pop(n, None) is not None]
-        gc.collect()
-        torch.cuda.empty_cache()
-        with torch.no_grad():
-            model(**tok("ping", return_tensors="pt").to(model.device))
-        print(f"removed towers {removed}; text-only forward OK; "
-              f"vram={torch.cuda.memory_allocated()//2**20}MiB")
-    except Exception as e:
-        print(f"tower removal failed ({e}); reloading full model")
-        del model
-        gc.collect()
-        torch.cuda.empty_cache()
-        model = load_model()
+    model, tok = load_base(args.model, attn=args.attn)
     model.config.use_cache = False
     model = prepare_model_for_kbit_training(model)
 
