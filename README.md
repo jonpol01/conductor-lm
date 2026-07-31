@@ -2,6 +2,8 @@
 
 **A Small Language Model for Cost-Aware Orchestration of Heterogeneous LLM Fleets**
 
+**English** · [日本語](README.ja.md)
+
 > Status: research design / pre-implementation · v0.1 · 2026-07
 
 ---
@@ -46,18 +48,9 @@ The envelope carries the task text, a context summary, the fleet registry, budge
 failure history. Conductor emits tier selection, decomposition, escalation policy, and
 confidence as constrained JSON. Execution outcomes return as training signal (§5, Stage 2).
 
-<p align="center">
-  <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="docs/architecture.ja-dark.png">
-    <img src="docs/architecture.ja.png" alt="Japanese edition of Figure 1: the same Conductor pipeline with control plane and data plane regions labelled in Japanese." width="680">
-  </picture>
-</p>
-
-<p align="center"><em>図 1 — Conductor は制御プレーンに属し、ルーティングを決定するのみで実行はしない。</em></p>
-
-Vector sources for both figures: [architecture.svg](docs/architecture.svg) ·
-[architecture.ja.svg](docs/architecture.ja.svg). Each PNG ships in light and dark variants and
-is selected automatically by the reader's theme.
+Vector sources: [architecture.svg](docs/architecture.svg) ·
+[architecture.ja.svg](docs/architecture.ja.svg) (Japanese edition). Each PNG ships in light and
+dark variants and is selected automatically by the reader's theme.
 
 ### 3.1 Input: task envelope
 
