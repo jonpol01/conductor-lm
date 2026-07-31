@@ -16,6 +16,8 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, os.path.join(HERE, ".."))
 from common import load_base  # noqa: E402
 
+TIER_RANK = {"local": 0, "mid": 1, "frontier": 2}
+
 
 def extract_json(text):
     text = text.strip()
@@ -63,7 +65,13 @@ def main():
 
     n = len(rows)
     parsed = valid = route_ok = rat_ok = fleet_ok = 0
+    # fail-up accounting: a misroute toward a MORE capable tier costs money, one
+    # toward a cheaper tier risks silently worse output. Only the latter is a
+    # safety failure, so they are counted separately rather than lumped as error.
+    up = down = lateral = 0
+    esc_ok = esc_total = 0
     rat_confusion = {}
+    samples = []
     for i, row in enumerate(rows):
         msgs = [{"role": "system", "content": sys_prompt},
                 {"role": "user", "content": json.dumps(row["envelope"], ensure_ascii=False)}]
@@ -82,17 +90,40 @@ def main():
         parsed += 1
         if not list(validator.iter_errors(d)):
             valid += 1
-        fleet_ids = {e["id"] for e in row["envelope"]["fleet"]}
+        fleet = row["envelope"]["fleet"]
+        fleet_ids = {e["id"] for e in fleet}
+        tier_of = {e["id"]: e["tier"] for e in fleet}
         if d.get("route") in fleet_ids:
             fleet_ok += 1
         if d.get("route") == gold["route"]:
             route_ok += 1
+        elif d.get("route") in tier_of:
+            pr, gr = TIER_RANK[tier_of[d["route"]]], TIER_RANK[tier_of[gold["route"]]]
+            if pr > gr:
+                up += 1
+            elif pr < gr:
+                down += 1
+            else:
+                lateral += 1
+        # escalation must point strictly upward (null only at the frontier)
+        esc = d.get("escalation") or {}
+        if d.get("route") in tier_of:
+            esc_total += 1
+            to = esc.get("to")
+            here = TIER_RANK[tier_of[d["route"]]]
+            if to is None:
+                esc_ok += 1 if here == 2 else 0
+            elif to in tier_of and TIER_RANK[tier_of[to]] > here:
+                esc_ok += 1
         pred_rat = d.get("rationale_class", "MISSING")
         if pred_rat == gold["rationale_class"]:
             rat_ok += 1
         else:
             rat_confusion[(gold["rationale_class"], pred_rat)] = \
                 rat_confusion.get((gold["rationale_class"], pred_rat), 0) + 1
+        samples.append({"i": i, "task_class": row["task_class"],
+                        "gold_route": gold["route"], "pred_route": d.get("route"),
+                        "gold_rationale": gold["rationale_class"], "pred_rationale": pred_rat})
         if (i + 1) % 20 == 0:
             print(f"[{i+1}/{n}] parsed={parsed} valid={valid} route_acc={route_ok/(i+1):.3f}")
 
@@ -103,6 +134,11 @@ def main():
         "route_in_fleet_rate": fleet_ok / n,
         "route_accuracy": route_ok / n,
         "rationale_accuracy": rat_ok / n,
+        "misroute_up": up,
+        "misroute_down": down,
+        "misroute_lateral": lateral,
+        "unsafe_downroute_rate": down / n,
+        "escalation_direction_valid": (esc_ok / esc_total) if esc_total else None,
     }
     print(json.dumps(results, indent=2))
     if rat_confusion:
@@ -112,7 +148,8 @@ def main():
     if args.out:
         with open(args.out, "w") as f:
             json.dump({"results": results,
-                       "confusions": [[g, p, c] for (g, p), c in rat_confusion.items()]}, f, indent=2)
+                       "confusions": [[g, p, c] for (g, p), c in rat_confusion.items()],
+                       "samples": samples}, f, indent=2)
 
 
 if __name__ == "__main__":
