@@ -23,8 +23,13 @@ def main():
     ap.add_argument("--epochs", type=float, default=1.0)
     ap.add_argument("--attn", default="sdpa")
     ap.add_argument("--max-len", type=int, default=1536)
-    ap.add_argument("--bs", type=int, default=1)
-    ap.add_argument("--grad-accum", type=int, default=16)
+    # bs=4 measured 6.7x the samples/s of bs=1 on a 10GB card (train/bench.py);
+    # throughput peaks at 4 and falls off above it as VRAM spills to system memory.
+    # grad_accum keeps the effective batch at 16, unchanged from the Stage-0 run.
+    ap.add_argument("--bs", type=int, default=4)
+    ap.add_argument("--grad-accum", type=int, default=4)
+    ap.add_argument("--max-steps", type=int, default=-1, dest="max_steps",
+                    help="cap optimizer steps — use 5 for the pre-flight smoke run")
     ap.add_argument("--lr", type=float, default=2e-4)
     args = ap.parse_args()
 
@@ -72,6 +77,7 @@ def main():
     cfg_kwargs = dict(
         output_dir=args.out,
         num_train_epochs=args.epochs,
+        max_steps=args.max_steps,
         per_device_train_batch_size=args.bs,
         per_device_eval_batch_size=1,  # default 8 spikes VRAM past 10GB at eval steps
         gradient_accumulation_steps=args.grad_accum,
