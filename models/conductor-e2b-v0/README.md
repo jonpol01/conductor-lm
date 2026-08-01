@@ -35,6 +35,19 @@ there anyway.
 **Do not deploy this adapter as a final decision-maker.** Treat its output as a proposal and
 enforce the hard gates deterministically in the serving layer.
 
+## Before you clone
+
+`adapter_model.safetensors` is stored in **Git LFS**. Cloning on a machine without `git-lfs`
+installed silently gives you a 133-byte pointer file instead of the weights, and loading it
+fails with the unhelpful:
+
+```
+SafetensorError: Error while deserializing header: header too large
+```
+
+Fix: `git lfs install && git lfs pull`. Check with `ls -l` — the file should be ~92 MB, not
+~133 bytes.
+
 ## Loading — important
 
 `adapter_config.json` stores `target_modules` as seven bare suffixes (`q_proj`, `k_proj`,
