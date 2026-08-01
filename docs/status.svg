@@ -1,0 +1,100 @@
+<svg width="680" height="600" viewBox="0 0 680 600" role="img" xmlns="http://www.w3.org/2000/svg">
+<title>Conductor project status, 2026-08-01</title>
+<desc>Progress figure. Stage 0 is complete: a Gemma 4 E2B QLoRA adapter evaluated on 800 held-out envelopes with 100 percent schema, fleet and escalation-direction validity, 91.4 percent route agreement, and a 4 percent unsafe-downroute rate. Stages 1 through 3 are blocked because trace harvesting and deployment do not exist yet, so no real decision or outcome data has been collected. The critical path runs from trace harvesting through serving to outcome DPO.</desc>
+<style>
+  text { font-family: -apple-system, "Segoe UI", Helvetica, Arial, sans-serif; }
+  .t  { font-size: 13px; font-weight: 400; fill: #1f2328; }
+  .ts { font-size: 11px; font-weight: 400; fill: #59636e; }
+  .th { font-size: 14px; font-weight: 500; fill: #1f2328; }
+  .big { font-size: 20px; font-weight: 500; fill: #1f2328; }
+  .done  { fill: #dafbe1; stroke: #4ac26b; stroke-width: 0.5; }
+  .prog  { fill: #fff8c5; stroke: #d4a72c; stroke-width: 0.5; }
+  .todo  { fill: #f6f8fa; stroke: #d1d9e0; stroke-width: 0.5; }
+  .panel { fill: none; stroke: #d1d9e0; stroke-width: 0.5; stroke-dasharray: 3 3; }
+  .arr { stroke: #59636e; stroke-width: 1.5; fill: none; }
+  .blk { stroke: #cf222e; stroke-width: 1; fill: none; stroke-dasharray: 4 3; }
+  .ok { fill: #1a7f37; font-size: 13px; font-weight: 500; }
+  .bad { fill: #cf222e; font-size: 13px; font-weight: 500; }
+  @media (prefers-color-scheme: dark) {
+    .t, .th, .big { fill: #f0f6fc; }
+    .ts { fill: #9198a1; }
+    .done { fill: #10301b; stroke: #2ea043; }
+    .prog { fill: #3a2d12; stroke: #d4a72c; }
+    .todo { fill: #151b23; stroke: #3d444d; }
+    .panel { stroke: #3d444d; }
+    .arr { stroke: #9198a1; }
+    .blk { stroke: #f85149; }
+    .ok { fill: #3fb950; }
+    .bad { fill: #f85149; }
+  }
+</style>
+<defs><marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M2 1L8 5L2 9" fill="none" stroke="context-stroke" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></marker></defs>
+
+<text class="big" x="40" y="48">Stage 0 complete · blocked on deployment</text>
+<text class="ts" x="40" y="68">Conductor-E2B v0 · 2026-08-01</text>
+
+<rect class="panel" x="40" y="86" width="600" height="126" rx="4"/>
+<text class="th" x="56" y="108">Shipped and measured</text>
+<text class="ts" x="56" y="130">800 held-out envelopes, greedy decoding, oracle = the rule policy</text>
+<text class="ok" x="56" y="156">100%</text>
+<text class="ts" x="56" y="174">JSON parse</text>
+<text class="ok" x="152" y="156">100%</text>
+<text class="ts" x="152" y="174">schema valid</text>
+<text class="ok" x="260" y="156">100%</text>
+<text class="ts" x="260" y="174">route in fleet</text>
+<text class="ok" x="372" y="156">100%</text>
+<text class="ts" x="372" y="174">escalates up</text>
+<text class="t" x="478" y="156">91.4%</text>
+<text class="ts" x="478" y="174">route agree</text>
+<text class="bad" x="568" y="156">4.0%</text>
+<text class="ts" x="568" y="174">unsafe down</text>
+<text class="ts" x="56" y="196">train loss 0.0954 / eval 0.0964 · adapter 92 MB in Git LFS · 750 steps on one RTX 3080</text>
+
+<text class="th" x="40" y="248">Roadmap</text>
+
+<rect class="done" x="40" y="262" width="188" height="42" rx="4"/>
+<text class="t" x="52" y="280">P0 · Specification</text>
+<text class="ts" x="52" y="296">schemas, taxonomy, 16 rationales</text>
+<rect class="done" x="246" y="262" width="188" height="42" rx="4"/>
+<text class="t" x="258" y="280">P1 · Data pipeline</text>
+<text class="ts" x="258" y="296">12k synthetic + rule oracle</text>
+<rect class="done" x="452" y="262" width="188" height="42" rx="4"/>
+<text class="t" x="464" y="280">P2 · Stage-0 train + eval</text>
+<text class="ts" x="464" y="296">adapter shipped, measured</text>
+
+<rect class="prog" x="40" y="316" width="188" height="42" rx="4"/>
+<text class="t" x="52" y="334">P2.1 · Fail-up gap</text>
+<text class="ts" x="52" y="350">guard + rebalance datagen</text>
+<rect class="todo" x="246" y="316" width="188" height="42" rx="4"/>
+<text class="t" x="258" y="334">P2.2 · Confidence study</text>
+<text class="ts" x="258" y="350">may simplify the guard</text>
+<rect class="prog" x="452" y="316" width="188" height="42" rx="4"/>
+<text class="t" x="464" y="334">P4 · Eval suite</text>
+<text class="ts" x="464" y="350">net-savings + baselines left</text>
+
+<rect class="todo" x="40" y="370" width="188" height="42" rx="4"/>
+<text class="t" x="52" y="388">P1.1 · Trace harvesting</text>
+<text class="ts" x="52" y="404">no real data exists yet</text>
+<rect class="todo" x="246" y="370" width="188" height="42" rx="4"/>
+<text class="t" x="258" y="388">P3 · Serving + shadow</text>
+<text class="ts" x="258" y="404">P3.0 merged MLX on Hermes</text>
+<rect class="todo" x="452" y="370" width="188" height="42" rx="4"/>
+<text class="t" x="464" y="388">P5 · Outcome DPO</text>
+<text class="ts" x="464" y="404">Stage 2 — needs outcomes</text>
+
+<rect class="todo" x="40" y="424" width="188" height="42" rx="4"/>
+<text class="t" x="52" y="442">P6 · 7B on DGX Spark</text>
+<text class="ts" x="52" y="458">same recipe, more capacity</text>
+<rect class="todo" x="246" y="424" width="188" height="42" rx="4"/>
+<text class="t" x="258" y="442">P7 · Online refinement</text>
+<text class="ts" x="258" y="458">scheduled retrain loop</text>
+
+<line class="arr" x1="232" y1="391" x2="242" y2="391" marker-end="url(#arrow)"/>
+<line class="arr" x1="438" y1="391" x2="448" y2="391" marker-end="url(#arrow)"/>
+
+<rect class="panel" x="40" y="490" width="600" height="82" rx="4"/>
+<text class="th" x="56" y="512">Critical path</text>
+<text class="ts" x="56" y="532">Stages 1 and 2 have no data, and none can exist until something is deployed and</text>
+<text class="ts" x="56" y="548">observing. P1.1 → P3 → P5 is the flywheel; until it turns, Stage 0 is the ceiling.</text>
+<text class="ts" x="56" y="564">Blocker to close first: 4% of routes still fail toward the cheaper tier.</text>
+</svg>

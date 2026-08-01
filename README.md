@@ -6,6 +6,20 @@
 
 > Status: Stage-0 trained and evaluated (§6.1) · v0.1 · 2026-08
 
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/status-dark.png">
+    <img src="docs/status.png" alt="Progress figure: Stage 0 complete with 100% schema, fleet and escalation-direction validity on 800 held-out envelopes, 91.4% route agreement and a 4% unsafe-downroute rate; Stages 1-3 blocked until trace harvesting and deployment exist." width="680">
+  </picture>
+</p>
+
+**Where this is.** Stage 0 is done and measured: the structural guarantees hold completely, but
+4% of primary routes still resolve toward a *cheaper* tier, so the fail-up invariant is not yet
+true of the model alone (§6.1). Stages 1 and 2 have no data and cannot until something is
+deployed and observing — trace harvesting → serving → outcome DPO is the flywheel, and until it
+turns, Stage 0 is the ceiling. Live board:
+[Project #8](https://github.com/users/jonpol01/projects/8).
+
 ---
 
 ## Abstract
