@@ -37,10 +37,19 @@ def main():
     ap.add_argument("--steps", type=int, default=8)
     ap.add_argument("--seq", type=int, default=704)
     ap.add_argument("--batch-sizes", default="1,2,4,8")
+    ap.add_argument("--no-liger", action="store_true", help="measure the unfused path")
     args = ap.parse_args()
 
     model, tok = load_base(args.model)
     model.config.use_cache = False
+    # MUST match training: TRL applies Liger, whose fused linear cross-entropy never
+    # materialises the [batch, seq, 262144] logits tensor. Without it this bench
+    # measures a different memory profile than the job it is supposed to model —
+    # the first version peaked at 14.4 GB on a 10 GB card and thrashed.
+    if not args.no_liger:
+        from liger_kernel.transformers.monkey_patch import _apply_liger_kernel_to_instance
+        _apply_liger_kernel_to_instance(model=model)
+        print("liger applied")
     model = prepare_model_for_kbit_training(model)
     model = get_peft_model(model, LoraConfig(
         r=16, lora_alpha=32, lora_dropout=0.05, bias="none", task_type="CAUSAL_LM",
