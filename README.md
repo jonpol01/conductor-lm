@@ -195,18 +195,25 @@ decision.
 - **P6 — Conductor-7B.** Scale-up training and TensorRT-LLM/vLLM deployment on DGX Spark.
 - **P7 — Online refinement.** Scheduled re-training loop from fleet telemetry.
 
-## 9. Planned Repository Layout
+## 9. Repository Layout
 
 ```
 conductor-lm/
 ├── spec/          # decision schema (JSON Schema), routing taxonomy, rationale classes
-├── datagen/       # synthetic envelope generation (Stage 0)
-├── harvest/       # trace-harvesting + envelope conversion (Stage 1)
-├── train/         # QLoRA / DPO recipes and configs
-├── serve/         # MCP server + OpenAI-compatible shim, constrained decoding
-├── eval/          # oracle replay, net-savings harness, baselines
-└── docs/          # design notes and experiment reports
+├── datagen/       # synthetic envelope generation + gold rule oracle (Stage 0)
+├── train/         # QLoRA recipe
+├── eval/          # eval harness and results
+├── models/        # trained adapters (Git LFS)
+│   └── conductor-e2b-v0/   # Stage-0 adapter — see its README before loading
+├── common.py      # shared base-model loading (train and eval must match)
+├── docs/          # architecture figures
+├── harvest/       # planned: trace harvesting + envelope conversion (Stage 1)
+└── serve/         # planned: MCP server, OpenAI-compatible shim, fail-up guard
 ```
+
+The trained Stage-0 adapter ships in this repo: **[models/conductor-e2b-v0](models/conductor-e2b-v0)**
+(92 MB via Git LFS). Read its README before loading — the towers must be stripped from the base
+model first, or PEFT will fail to attach the adapter.
 
 ## 10. License
 
