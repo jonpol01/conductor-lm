@@ -49,6 +49,9 @@ def main():
     ap.add_argument("--data", default="data/eval_raw.jsonl")
     ap.add_argument("--n", type=int, default=200)
     ap.add_argument("--out", default=None)
+    ap.add_argument("--batch", type=int, default=16)
+    # longest real decision is 103 tokens; 160 is headroom without a runaway cap
+    ap.add_argument("--max-new", type=int, default=160, dest="max_new")
     args = ap.parse_args()
 
     with open(os.path.join(HERE, "..", "spec", "decision.schema.json"), encoding="utf-8") as f:
@@ -63,6 +66,30 @@ def main():
 
     rows = [json.loads(l) for l in open(args.data, encoding="utf-8")][: args.n]
 
+    # Batched greedy decoding. Prompts cluster tightly (p50 508 / max 588 tokens) and
+    # decisions are short (p50 67 / max 103), so padding waste is small and batching
+    # is close to a free multiple. Decoder-only models need LEFT padding or the
+    # generated continuation starts after the pad run.
+    tok.padding_side = "left"
+    if tok.pad_token_id is None:
+        tok.pad_token = tok.eos_token
+
+    def generate_batch(batch_rows):
+        prompts = [
+            tok.apply_chat_template(
+                [{"role": "system", "content": sys_prompt},
+                 {"role": "user", "content": json.dumps(r["envelope"], ensure_ascii=False)}],
+                add_generation_prompt=True, tokenize=False)
+            for r in batch_rows
+        ]
+        enc = tok(prompts, return_tensors="pt", padding=True,
+                  add_special_tokens=False).to(model.device)
+        with torch.no_grad():
+            out = model.generate(**enc, max_new_tokens=args.max_new, do_sample=False,
+                                 pad_token_id=tok.pad_token_id)
+        cut = enc["input_ids"].shape[1]
+        return [tok.decode(o[cut:], skip_special_tokens=True) for o in out]
+
     n = len(rows)
     parsed = valid = route_ok = rat_ok = fleet_ok = 0
     # fail-up accounting: a misroute toward a MORE capable tier costs money, one
@@ -72,16 +99,13 @@ def main():
     esc_ok = esc_total = 0
     rat_confusion = {}
     samples = []
+    texts = []
+    for s in range(0, n, args.batch):
+        texts.extend(generate_batch(rows[s:s + args.batch]))
+        print(f"[gen {min(s + args.batch, n)}/{n}]", flush=True)
+
     for i, row in enumerate(rows):
-        msgs = [{"role": "system", "content": sys_prompt},
-                {"role": "user", "content": json.dumps(row["envelope"], ensure_ascii=False)}]
-        enc = tok.apply_chat_template(msgs, add_generation_prompt=True, return_tensors="pt",
-                                      return_dict=True).to(model.device)
-        with torch.no_grad():
-            out = model.generate(**enc, max_new_tokens=320, do_sample=False,
-                                 pad_token_id=tok.eos_token_id)
-        text = tok.decode(out[0][enc["input_ids"].shape[1]:], skip_special_tokens=True)
-        d = extract_json(text)
+        d = extract_json(texts[i])
         gold = row["gold"]
         if d is None:
             rat_confusion[(gold["rationale_class"], "UNPARSEABLE")] = \
@@ -123,7 +147,9 @@ def main():
                 rat_confusion.get((gold["rationale_class"], pred_rat), 0) + 1
         samples.append({"i": i, "task_class": row["task_class"],
                         "gold_route": gold["route"], "pred_route": d.get("route"),
-                        "gold_rationale": gold["rationale_class"], "pred_rationale": pred_rat})
+                        "gold_rationale": gold["rationale_class"], "pred_rationale": pred_rat,
+                        # P2.2: is confidence low precisely where the model is wrong?
+                        "confidence": d.get("confidence")})
         if (i + 1) % 20 == 0:
             print(f"[{i+1}/{n}] parsed={parsed} valid={valid} route_acc={route_ok/(i+1):.3f}")
 
