@@ -79,7 +79,9 @@ def main():
         num_train_epochs=args.epochs,
         max_steps=args.max_steps,
         per_device_train_batch_size=args.bs,
-        per_device_eval_batch_size=1,  # default 8 spikes VRAM past 10GB at eval steps
+        # Was pinned to 1 after the default of 8 spiked VRAM past 10GB. With bs=4
+        # proven to fit, match it: the probe spent 852s of a 1027s run inside eval.
+        per_device_eval_batch_size=args.bs,
         gradient_accumulation_steps=args.grad_accum,
         learning_rate=args.lr,
         lr_scheduler_type="cosine",
