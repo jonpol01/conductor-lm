@@ -1,0 +1,152 @@
+{
+  "results": {
+    "n": 800,
+    "parse_rate": 1.0,
+    "schema_valid_rate": 1.0,
+    "route_in_fleet_rate": 1.0,
+    "route_accuracy": 0.91375,
+    "rationale_accuracy": 0.90375,
+    "misroute_up": 37,
+    "misroute_down": 32,
+    "misroute_lateral": 0,
+    "unsafe_downroute_rate": 0.04,
+    "escalation_direction_valid": 1.0
+  },
+  "confusions": [
+    [
+      "capability_gate_local_unfit",
+      "history_failure_escalation",
+      4
+    ],
+    [
+      "fleet_gap_fail_up",
+      "history_failure_escalation",
+      2
+    ],
+    [
+      "budget_conservation_downroute",
+      "boilerplate_draft_mid",
+      13
+    ],
+    [
+      "long_context_capability_gate",
+      "history_failure_escalation",
+      7
+    ],
+    [
+      "boilerplate_draft_mid",
+      "budget_conservation_downroute",
+      1
+    ],
+    [
+      "history_failure_escalation",
+      "boilerplate_draft_mid",
+      9
+    ],
+    [
+      "capability_gate_local_unfit",
+      "long_context_capability_gate",
+      1
+    ],
+    [
+      "mechanical_refactor_mid",
+      "history_failure_escalation",
+      1
+    ],
+    [
+      "long_context_capability_gate",
+      "low_risk_code_mid",
+      1
+    ],
+    [
+      "capability_gate_local_unfit",
+      "fleet_gap_fail_up",
+      2
+    ],
+    [
+      "history_failure_escalation",
+      "long_context_capability_gate",
+      5
+    ],
+    [
+      "budget_conservation_downroute",
+      "low_risk_code_mid",
+      1
+    ],
+    [
+      "fleet_gap_fail_up",
+      "budget_conservation_downroute",
+      1
+    ],
+    [
+      "capability_gate_local_unfit",
+      "light_extractive_local",
+      3
+    ],
+    [
+      "history_failure_escalation",
+      "light_extractive_local",
+      2
+    ],
+    [
+      "fleet_gap_fail_up",
+      "long_context_capability_gate",
+      1
+    ],
+    [
+      "light_extractive_local",
+      "long_context_capability_gate",
+      1
+    ],
+    [
+      "history_failure_escalation",
+      "mechanical_refactor_mid",
+      3
+    ],
+    [
+      "light_extractive_local",
+      "capability_gate_local_unfit",
+      5
+    ],
+    [
+      "history_failure_escalation",
+      "low_risk_code_mid",
+      3
+    ],
+    [
+      "long_context_capability_gate",
+      "light_extractive_local",
+      1
+    ],
+    [
+      "light_extractive_local",
+      "budget_conservation_downroute",
+      1
+    ],
+    [
+      "light_extractive_local",
+      "history_failure_escalation",
+      5
+    ],
+    [
+      "high_volume_batch_local",
+      "capability_gate_local_unfit",
+      1
+    ],
+    [
+      "boilerplate_draft_mid",
+      "light_extractive_local",
+      1
+    ],
+    [
+      "long_context_capability_gate",
+      "capability_gate_local_unfit",
+      1
+    ],
+    [
+      "long_context_capability_gate",
+      "fleet_gap_fail_up",
+      1
+    ]
+  ]
+}

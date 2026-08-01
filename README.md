@@ -4,7 +4,7 @@
 
 **English** · [日本語](README.ja.md)
 
-> Status: research design / pre-implementation · v0.1 · 2026-07
+> Status: Stage-0 trained and evaluated (§6.1) · v0.1 · 2026-08
 
 ---
 
@@ -131,6 +131,52 @@ Four stages, each independently evaluable:
 | Decision latency | Envelope-in → decision-out, p50/p95 | < 500 ms home / < 200 ms Spark |
 
 A router is only useful if `(misroute rate × escalation cost) + router cost < savings from correct downroutes`; the evaluation harness computes this net-savings figure directly per workload mix.
+
+### 6.1 Stage-0 results (Conductor-E2B v0)
+
+Gemma 4 E2B, QLoRA (r=16, 4-bit nf4, 24.2M trainable params), one epoch over 12k synthetic
+envelopes on a single RTX 3080. Final train loss 0.0954, eval loss 0.0964. Evaluated on **800
+held-out envelopes**, greedy decoding, gold labels from the rule oracle in `datagen/policy.py`.
+
+| metric | result |
+|---|---|
+| JSON parse rate | **100.0%** |
+| Schema validity | **100.0%** |
+| Route names a real fleet executor | **100.0%** |
+| Escalation points strictly upward | **100.0%** |
+| Route agreement with oracle | 91.4% |
+| Rationale-class agreement | 90.4% |
+| Unsafe downroutes (toward a cheaper tier) | **4.0%** (32/800) |
+
+The structural guarantees hold completely: 800 consecutive decisions with no malformed JSON, no
+schema violation, and no hallucinated executor id. Every emitted `escalation.to` pointed to a
+strictly more capable tier.
+
+**The fail-up invariant does not yet hold for primary route selection.** Of 69 misroutes, 37 went
+up (wasteful but safe) and 32 went down (unsafe) — mostly `frontier → mid` (23). The downroutes
+are not uniformly distributed: **30 of 32 come from the conditional override rules whose entire
+purpose is to route upward.**
+
+| gold rationale of unsafe downroutes | count |
+|---|---|
+| `history_failure_escalation` | 17 |
+| `long_context_capability_gate` | 7 |
+| `capability_gate_local_unfit` | 3 |
+| `ambiguity_fail_up` | 2 |
+| `fleet_gap_fail_up` | 1 |
+
+The model learned the base task-class mapping well and under-applies the *conditional* overrides;
+when it misses one it falls back to the class-default tier, which is always lower. Failure
+history is the weakest signal by a wide margin — unsurprising for Stage 0, since imitating a rule
+that says "this tier failed before" is precisely the pattern that outcome-based training (§5,
+Stage 2) is meant to supply.
+
+Two implications carry into the design. First, Stage-0 synthetic data should oversample override
+cases, which are rarer than base cases by construction. Second, and more durable: the serving
+layer should enforce the fail-up invariant deterministically rather than trusting the model to
+have learned it. The learned router proposes; a small deterministic guard rejects any route that
+violates a hard gate. A 4% unsafe-downroute rate is acceptable for a *proposal*, not for a final
+decision.
 
 ## 7. Deployment Targets
 
