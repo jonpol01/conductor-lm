@@ -10,8 +10,15 @@ for a router that is supposed to decide in under 500ms. This loads once and stay
        "history":[]}' | jq
 
 Endpoints:
-  GET  /health   model id, uptime, request count, latency p50/p95
-  POST /route    envelope (fleet optional — a default fleet is filled in) -> decision
+  GET  /health    uptime, request count, latency p50/p95
+  POST /route     envelope -> decision only (advisor mode; you dispatch)
+  POST /complete  {"prompt": "..."} -> Conductor picks a tier, CALLS it, returns the
+                  answer. Gateway mode: you talk to one endpoint and never think about
+                  routing. Every decision + outcome is appended to logs/sessions.jsonl,
+                  which is the Stage-1/Stage-2 training data the pipeline is missing.
+
+Executors are configured in EXECUTORS below. Any tier without credentials degrades to
+"decided but not dispatched" rather than failing the request.
 """
 
 import argparse
@@ -53,9 +60,68 @@ def extract_json(text):
     return None
 
 STATE = {"lat": [], "n": 0, "t0": time.time()}
+SESSION_LOG = os.path.join(ROOT, "logs", "sessions.jsonl")
+
+# Where each tier actually runs. The local tier is LM Studio on Hermes; hosted tiers
+# need a key and are skipped (decision returned, not executed) when one is absent.
+EXECUTORS = {
+    "local-2b":      {"url": "http://192.168.2.55:1234/v1/chat/completions",
+                      "model": "gemma-4-e2b-it-mlx", "key_env": None},
+    "gemma-e2b-local": {"url": "http://192.168.2.55:1234/v1/chat/completions",
+                        "model": "gemma-4-e2b-it-mlx", "key_env": None},
+    "local-8b":      {"url": "http://192.168.2.55:1234/v1/chat/completions",
+                      "model": "qwen3.5-9b-mlx", "key_env": None},
+    "claude-sonnet": {"url": "https://api.anthropic.com/v1/messages",
+                      "model": "claude-sonnet-5", "key_env": "ANTHROPIC_API_KEY"},
+    "claude-opus":   {"url": "https://api.anthropic.com/v1/messages",
+                      "model": "claude-opus-5", "key_env": "ANTHROPIC_API_KEY"},
+}
 
 
-def build(model, tok, sys_prompt, validator, envelope, max_new):
+def dispatch(route, prompt, timeout=180):
+    """Send the REAL prompt to the chosen executor. Returns (text, error)."""
+    import urllib.error
+    import urllib.request
+    ex = EXECUTORS.get(route)
+    if ex is None:
+        return None, f"no executor configured for {route}"
+    key = os.environ.get(ex["key_env"]) if ex["key_env"] else None
+    if ex["key_env"] and not key:
+        return None, f"{ex['key_env']} not set — decided but not dispatched"
+    if "anthropic" in ex["url"]:
+        body = {"model": ex["model"], "max_tokens": 1024,
+                "messages": [{"role": "user", "content": prompt}]}
+        hdrs = {"content-type": "application/json", "x-api-key": key,
+                "anthropic-version": "2023-06-01"}
+        pick = lambda j: "".join(b.get("text", "") for b in j.get("content", []))  # noqa: E731
+    else:
+        body = {"model": ex["model"], "max_tokens": 1024,
+                "messages": [{"role": "user", "content": prompt}]}
+        hdrs = {"content-type": "application/json"}
+        pick = lambda j: j["choices"][0]["message"]["content"]  # noqa: E731
+    req = urllib.request.Request(ex["url"], data=json.dumps(body).encode(), headers=hdrs)
+    try:
+        with urllib.request.urlopen(req, timeout=timeout) as r:
+            return pick(json.load(r)), None
+    except Exception as e:                                       # noqa: BLE001
+        return None, repr(e)[:200]
+
+
+def log_session(rec):
+    """One line per completed request — the Stage-1/2 corpus, written as it happens."""
+    os.makedirs(os.path.dirname(SESSION_LOG), exist_ok=True)
+    with open(SESSION_LOG, "a", encoding="utf-8") as f:
+        f.write(json.dumps(rec, ensure_ascii=False) + "\n")
+
+
+def build(model, tok, sys_prompt, validator, envelope, max_new, gateway=False):
+    # gateway mode takes a raw prompt and derives the envelope from it — the caller
+    # should not have to hand-build routing metadata just to ask a question
+    prompt = envelope.pop("prompt", None)
+    if prompt is not None:
+        envelope.setdefault("task", prompt[:300])
+        envelope.setdefault("context", {})
+        envelope["context"].setdefault("tokens_est", max(1, len(prompt) // 4))
     if "fleet" not in envelope:
         envelope["fleet"] = DEFAULT_FLEET
     envelope.setdefault("history", [])
@@ -80,9 +146,24 @@ def build(model, tok, sys_prompt, validator, envelope, max_new):
     errs = [] if d is None else [e.message for e in validator.iter_errors(d)]
     STATE["lat"].append(ms)
     STATE["n"] += 1
-    return {"decision": d, "raw": None if d else text[:200],
-            "schema_errors": errs, "latency_ms": round(ms, 1),
-            "envelope": envelope}
+    out = {"decision": d, "raw": None if d else text[:200],
+           "schema_errors": errs, "latency_ms": round(ms, 1),
+           "envelope": envelope}
+
+    if gateway and prompt is not None:
+        route = (d or {}).get("route")
+        # fail up: an unusable decision must not silently become a cheap one
+        if not route or errs:
+            route = "claude-opus"
+            out["guard"] = "decision unusable — failed up to frontier"
+        answer, err = dispatch(route, prompt)
+        out.update({"executed_by": route, "answer": answer, "exec_error": err})
+        log_session({"ts": time.time(), "prompt": prompt[:2000],
+                     "envelope": envelope, "decision": d,
+                     "schema_errors": errs, "route_used": route,
+                     "ok": err is None, "error": err,
+                     "decision_ms": round(ms, 1)})
+    return out
 
 
 def make_handler(fn):
@@ -110,15 +191,15 @@ def make_handler(fn):
                 self._send(404, {"error": "GET /health or POST /route"})
 
         def do_POST(self):
-            if not self.path.startswith("/route"):
-                return self._send(404, {"error": "POST /route"})
+            if not (self.path.startswith("/route") or self.path.startswith("/complete")):
+                return self._send(404, {"error": "POST /route or /complete"})
             n = int(self.headers.get("Content-Length", 0))
             try:
                 env = json.loads(self.rfile.read(n) or b"{}")
             except json.JSONDecodeError as e:
                 return self._send(400, {"error": f"bad json: {e}"})
             try:
-                self._send(200, fn(env))
+                self._send(200, fn(env, self.path.startswith("/complete")))
             except Exception as e:                       # noqa: BLE001
                 self._send(500, {"error": repr(e)})
     return H
@@ -148,8 +229,8 @@ def main():
 
     srv = ThreadingHTTPServer(
         ("0.0.0.0", args.port),
-        make_handler(lambda env: build(model, tok, sys_prompt, validator,
-                                       env, args.max_new)))
+        make_handler(lambda env, gw=False: build(model, tok, sys_prompt, validator,
+                                                 env, args.max_new, gw)))
     srv.serve_forever()
 
 
