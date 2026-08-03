@@ -9,6 +9,27 @@ You are not training anything and not judging its routing — you are generating
 
 ---
 
+## PREREQUISITE — John must do this once, or nothing below works
+
+The server runs inside WSL on the 3080, and WSL does not expose ports to the LAN by itself.
+Until this is run in an **Administrator** PowerShell on the 3080, `192.168.2.109:8770` is
+unreachable from Hermes and every run will log `SKIP conductor down`:
+
+```powershell
+netsh interface portproxy add v4tov4 listenport=8770 listenaddress=0.0.0.0 connectport=8770 connectaddress=172.26.66.49
+netsh advfirewall firewall add rule name="conductor8770" dir=in action=allow protocol=TCP localport=8770
+```
+
+(The box already has the same rule for port 8188, so this is the established pattern. The WSL
+IP `172.26.66.49` can change across WSL restarts — if the endpoint dies later, re-check it with
+`wsl hostname -I` and update the rule.)
+
+Verify from anywhere on the LAN before starting the cron:
+
+```bash
+curl -s --max-time 8 http://192.168.2.109:8770/health
+```
+
 ## The endpoint
 
 ```
