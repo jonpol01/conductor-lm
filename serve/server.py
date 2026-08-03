@@ -29,7 +29,28 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.join(HERE, "..")
 sys.path.insert(0, ROOT)
 from common import load_base  # noqa: E402
-from serve.try_decision import DEFAULT_FLEET, extract_json  # noqa: E402
+from serve.try_decision import DEFAULT_FLEET  # noqa: E402
+
+
+def extract_json(text):
+    """First balanced {...} object in the reply, or None."""
+    t = text.strip()
+    if t.startswith("```"):
+        t = t.strip("`\n")
+        if t.startswith("json"):
+            t = t[4:]
+    i = t.find("{")
+    if i < 0:
+        return None
+    depth = 0
+    for j, ch in enumerate(t[i:], i):
+        depth += (ch == "{") - (ch == "}")
+        if depth == 0:
+            try:
+                return json.loads(t[i:j + 1])
+            except json.JSONDecodeError:
+                return None
+    return None
 
 STATE = {"lat": [], "n": 0, "t0": time.time()}
 
